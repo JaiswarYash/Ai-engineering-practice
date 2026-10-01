@@ -7,4 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
     "langchain>=1.4.0",
     "langchain-core>=1.6.3",
+    "langchain-openai>=1.6.7",
+    "openroute>=0.0.1",
 ]
