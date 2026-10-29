@@ -1,2 +1,0 @@
-# while i do MCP practical. i will also do A2A
-# In practice — you pick one binding when implementing A2A between two agents. The demo in the Oct 24 session used JSON-RPC (the default in the A2A package).
