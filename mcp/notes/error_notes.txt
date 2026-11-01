@@ -1,0 +1,95 @@
+====================================================
+DAY 1 — ERRORS ENCOUNTERED & FIXES
+MCP Server (search_tool.py)
+====================================================
+
+ERROR 1: Wrong import path
+---------------------------
+What broke:  from mcp.server import MCPServer
+Fix:         from mcp.server.mcpserver import MCPServer
+Why:         MCP 2.x renamed FastMCP to MCPServer and moved it to mcp.server.mcpserver
+
+
+ERROR 2: Missing space in Bearer token
+----------------------------------------
+What broke:  "Authorization": f"Bearer{api_key}"
+Fix:         "Authorization": f"Bearer {api_key}"
+Why:         Without the space the header value becomes "Bearertvly-xxx" instead of
+             "Bearer tvly-xxx" — Tavily rejects it with 401 Unauthorized
+
+
+ERROR 3: Wrong Tavily request params
+--------------------------------------
+What broke:  json={'q': query, 'max_result': max_result}
+Fix:         json={'query': query, 'max_results': max_result}
+Why:         Tavily API expects the key "query" (not "q") and "max_results" (not "max_result")
+             Wrong param names = Tavily ignores the input and returns nothing
+
+
+ERROR 4: Wrong response parsing (Brave Search format used instead of Tavily)
+------------------------------------------------------------------------------
+What broke:  results = response.json().get('web', {}).get('results', [])
+             r.get('description', '')
+Fix:         results = response.json().get('results', [])
+             r.get('content', '')
+Why:         Tavily returns {"results": [...]} at the top level (not nested under "web")
+             Each result has a "content" field, not "description"
+             The "web.results" shape is Brave Search API — different product entirely
+
+
+ERROR 5: .env file not loading automatically
+---------------------------------------------
+What broke:  api_key = os.environ["TAVILY_API_KEY"]  — throws KeyError at runtime
+Fix:         Add to top of file:
+               from dotenv import load_dotenv
+               load_dotenv()
+Why:         Python does not read .env files on its own. load_dotenv() must be called
+             explicitly to push .env variables into os.environ before they are accessed
+             Install if missing: pip install python-dotenv
+
+
+====================================================
+TEST COMMANDS (PowerShell)
+====================================================
+
+-- Step 1: Check if API key is set --
+echo $env:TAVILY_API_KEY
+
+-- Step 2: Set API key manually (if not using .env) --
+$env:TAVILY_API_KEY = "tvly-xxxxxxxxxxxxxxxx"
+
+-- Step 3: Test server is alive (expect Accept header error if missing) --
+Invoke-RestMethod -Uri "http://127.0.0.1:8001/mcp" -Method POST `
+  -ContentType "application/json" `
+  -Body '{"query": "LangGraph"}'
+
+-- Step 4: Correct minimal test (Accept header added) --
+Invoke-RestMethod -Uri "http://127.0.0.1:8001/mcp" -Method POST `
+  -ContentType "application/json" `
+  -Headers @{"Accept"="application/json"} `
+  -Body '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"LangGraph"}}}'
+
+-- Step 5: See actual result content (PowerShell collapses nested objects) --
+$r = Invoke-RestMethod -Uri "http://127.0.0.1:8001/mcp" -Method POST `
+  -ContentType "application/json" `
+  -Headers @{"Accept"="application/json"} `
+  -Body '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"LangGraph"}}}'
+
+$r.result.content
+
+
+====================================================
+KEY CONCEPTS LEARNED
+====================================================
+
+- MCP uses JSON-RPC format — you cannot send raw JSON like {"query": "..."}
+  Every request needs: jsonrpc, id, method, params
+
+- The Accept: application/json header is mandatory for MCP's streamable-http transport
+  Without it the server rejects the request before reading the body
+
+- isError=True in the result means the tool ran but threw an exception internally
+  (not a network/protocol error) — check API keys and response parsing first
+
+- PowerShell collapses nested objects in output — use $r.result.content to drill in
+====================================================

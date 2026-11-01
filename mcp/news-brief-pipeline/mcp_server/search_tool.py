@@ -1,13 +1,16 @@
 import os
 import httpx
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
+from dotenv import load_dotenv
 
-server = FastMCP("Search MCP Server")
+load_dotenv()
+
+server = MCPServer("Search MCP Server")
 
 @server.tool()
 def search(query: str,max_result: int = 5) -> str:
     """Search the web for any topic and return the top results."""
-    api_key = os.environ["TAVILY_API_KEY"]
+    api_key = os.getenv("TAVILY_API_KEY")
 
     # Send a POST request to Tavily's search API with the query and result limit
     response = httpx.post(
@@ -29,4 +32,10 @@ def search(query: str,max_result: int = 5) -> str:
     return "\n\n".join(lines)
 
 if __name__ == "__main__":
-    server.run(transport="streamable-http")
+    server.run(
+        transport="streamable-http",
+        host="127.0.0.1",
+        port=8001,
+        stateless_http=True,
+        json_response=True,
+    )
