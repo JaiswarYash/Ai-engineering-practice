@@ -14,3 +14,4 @@
 # Day 1 — Build the MCP server (one tool) and get Agent A calling it successfully
 # Day 2 — Build Agent B as an A2A server, test it independently with a manual request
 # Day 3 — Wire Agent A as the A2A client, run the full pipeline end-to-end
+

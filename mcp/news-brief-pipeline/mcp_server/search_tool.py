@@ -1,8 +1,8 @@
 import os
 import httpx
-from mcp.server import MCPServer
+from mcp.server.fastmcp import FastMCP
 
-server = MCPServer("Search MCP Server")
+server = FastMCP("Search MCP Server")
 
 @server.tool()
 def search(query: str,max_result: int = 5) -> str:
@@ -12,20 +12,20 @@ def search(query: str,max_result: int = 5) -> str:
     # Send a POST request to Tavily's search API with the query and result limit
     response = httpx.post(
         "https://api.tavily.com/search",
-        json={'q': query, 'max_result': max_result},
-        headers={"Authorization": f"Bearer{api_key}"},
+        json={'query': query, 'max_results': max_result},
+        headers={"Authorization": f"Bearer {api_key}"},
         timeout=10
     )
     response.raise_for_status()
 
-    results = response.json().get('web', {}).get('results', [])
+    results = response.json().get('results', [])
 
     if not results:
         return 'No result found'
 
     lines = []
     for i, r in enumerate(results, 1):
-        lines.append(f"{i}. {r['title']}\n   {r['url']}\n   {r.get('description', '')}")
+        lines.append(f"... {r.get('content', '')}")
     return "\n\n".join(lines)
 
 if __name__ == "__main__":
