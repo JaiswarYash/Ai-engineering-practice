@@ -8,7 +8,7 @@ load_dotenv()
 server = MCPServer("Search MCP Server")
 
 @server.tool()
-def search(query: str,max_result: int = 5) -> str:
+async def search(query: str,max_result: int = 5) -> str:
     """Search the web for any topic and return the top results."""
     api_key = os.getenv("TAVILY_API_KEY")
 
