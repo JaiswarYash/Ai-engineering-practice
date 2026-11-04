@@ -26,6 +26,18 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from starlette.applications import Starlette
 
+#===== MCP Client =====#
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+async def search(query: str)-> str:
+    async with streamablehttp_client("127.0.0.1", 8001) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool("search", query=query)
+            return "\n".join(c.text for c in result.content if c.type == "text")
+
+#===== Research Agent =====#
 class ResearchAgentExecutor(AgentExecutor):
     async def execute(self, request_context: RequestContext, event: EventQueue) -> None:
         query = get_message_text(request_context.request)
