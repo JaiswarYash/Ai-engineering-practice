@@ -30,21 +30,14 @@ from starlette.applications import Starlette
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-async def search(query: str)-> str:
-    async with streamablehttp_client("127.0.0.1", 8001) as (read, write, _):
+async def search(query: str) -> str:
+    async with streamablehttp_client("http://127.0.0.1:8001/mcp") as (read, write, _):
         async with ClientSession(read, write) as session:
             await session.initialize()
-            tools = await session.list_tools()
-            for tool in tools.tools:
-                print(tool.name, "-", tool.description)
-                print("  args:", tool.inputSchema)
-
             result = await session.call_tool("search", {"query": query})
-            return result
+            return result.content[0].text
 
 #===== Research Agent =====#
-class ResearchAgentExecutor(AgentExecutor):
-    async def execute(self, request_context: RequestContext, event: EventQueue) -> None:
-        query = get_message_text(request_context.request)
+
         
         
