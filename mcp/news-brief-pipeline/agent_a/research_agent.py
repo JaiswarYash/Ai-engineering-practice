@@ -15,29 +15,17 @@
 # Day 2 — Build Agent B as an A2A server, test it independently with a manual request
 # Day 3 — Wire Agent A as the A2A client, run the full pipeline end-to-end
 
-import uvicorn
+import httpx
+import uvicorn 
+from a2a.client import A2ACardResolver
+from a2a.client import ClientConfig, create_client
+from a2a.helpers import new_text_message
+from a2a.types.a2a_pb2 import Role, SendMessageRequest
 
-from a2a.helpers import get_message_text, new_text_message
-from a2a.server.agent_execution import AgentExecutor, RequestContext
-from a2a.server.events import EventQueue
-from a2a.server.request_handlers import DefaultRequestHandler
-from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
-from a2a.server.tasks import InMemoryTaskStore
-from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
-from starlette.applications import Starlette
+async with httpx.AsyncClient() as httpx_client:
+    resolver = A2ACardResolver(
+        httpx_client=httpx_client,
+        base_url= 'HTTPS://127.0.0.1:8002'
 
-#===== MCP Client =====#
-from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
-
-async def search(query: str) -> str:
-    async with streamablehttp_client("http://127.0.0.1:8001/mcp") as (read, write, _):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.call_tool("search", {"query": query})
-            return result.content[0].text
-
-#===== Research Agent =====#
-
-        
-        
+    )
+    public_agent_card = await resolver.get_agent_card()
